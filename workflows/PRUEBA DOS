@@ -1,0 +1,307 @@
+{
+  "name": "Newslittle - Sistema Inteligente Principal",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "cuento-inteligente",
+        "httpMethod": "POST",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-entrada",
+      "name": "Entrada Peticion Usuario",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 400],
+      "webhookId": "cuento-inteligente"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "challenge-key",
+              "name": "challenge_key",
+              "value": "={{$json.challenge}}_{{$json.age_range}}",
+              "type": "string"
+            },
+            {
+              "id": "complete-key", 
+              "name": "complete_key",
+              "value": "={{$json.animal_type}}_{{$json.challenge}}_{{$json.age_range}}",
+              "type": "string"
+            },
+            {
+              "id": "trace-id",
+              "name": "trace_id",
+              "value": "={{`req_${new Date().getTime()}_${Math.floor(Math.random() * 1000)}`}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "crear-keys",
+      "name": "Crear Keys de Busqueda",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [400, 400]
+    },
+    {
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "airtableApi",
+        "operation": "list",
+        "baseId": "TU_BASE_ID_AQUI",
+        "tableId": "Investigacion_Desafios",
+        "filterByFormula": "={challenge_key} = '{{$json.challenge_key}}'",
+        "options": {}
+      },
+      "id": "buscar-investigacion",
+      "name": "Buscar Investigacion Existe",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [600, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "no-research",
+              "leftValue": "={{$json.records.length}}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "equal"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-investigar",
+      "name": "IF Necesita Investigacion",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [800, 400]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "messages": {
+          "values": [
+            {
+              "role": "user",
+              "content": "Rol: Investigador en psicologia infantil.\n\nINVESTIGACION COMPLETA para:\nDesafio: {{$json.challenge}}\nEdad: {{$json.age_range}} años\n\nProporciona:\n1. ANALISIS CIENTIFICO del desafio\n2. TECNICAS TERAPEUTICAS mas efectivas\n3. VOCABULARIO apropiado para esta edad\n4. ELEMENTOS NARRATIVOS que funcionan\n5. OBJETIVOS TERAPEUTICOS especificos\n6. ESTRATEGIAS de implementacion\n\nEsta investigacion se usara para crear MULTIPLES cuentos, asi que debe ser completa y reutilizable.\n\nResponde en formato estructurado y detallado."
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "investigar-desafio",
+      "name": "Investigar Desafio Nuevo",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [1000, 300]
+    },
+    {
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "airtableApi",
+        "operation": "create",
+        "baseId": "TU_BASE_ID_AQUI",
+        "tableId": "Investigacion_Desafios",
+        "data": {
+          "challenge": "={{$json.challenge}}",
+          "age_range": "={{$json.age_range}}",
+          "challenge_key": "={{$json.challenge_key}}",
+          "research_data": "={{$node['Investigar Desafio Nuevo'].json.text}}",
+          "creation_cost": 0.25
+        },
+        "options": {}
+      },
+      "id": "guardar-investigacion",
+      "name": "Guardar Investigacion",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [1200, 300]
+    },
+    {
+      "parameters": {
+        "workflowId": "TU_WORKFLOW_ID_GENERADOR_AQUI",
+        "source": "database",
+        "options": {
+          "inputData": "={{{\n  \"challenge\": $json.challenge,\n  \"age_range\": $json.age_range,\n  \"research_data\": $node['Investigar Desafio Nuevo'].json.text,\n  \"trigger_reason\": \"new_challenge_discovered\"\n}}}"
+        }
+      },
+      "id": "activar-generador",
+      "name": "Activar Generador Masivo",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [1400, 300]
+    },
+    {
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "airtableApi",
+        "operation": "list",
+        "baseId": "TU_BASE_ID_AQUI",
+        "tableId": "Cuentos_Completos",
+        "filterByFormula": "={complete_key} = '{{$json.complete_key}}'",
+        "options": {}
+      },
+      "id": "buscar-cuento-completo",
+      "name": "Buscar Cuento Especifico Existe",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [800, 600]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "story-exists",
+              "leftValue": "={{$json.records.length}}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-cuento-existe",
+      "name": "IF Cuento Existe",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1000, 600]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "personalized",
+              "name": "personalized_story",
+              "value": "={{$json.records[0].fields.story_template.replace(/\\{\\{CHILD_NAME\\}\\}/g, $node['Crear Keys de Busqueda'].json.childName).replace(/\\{\\{TOY_NAME\\}\\}/g, $node['Crear Keys de Busqueda'].json.toyName)}}",
+              "type": "string"
+            },
+            {
+              "id": "source",
+              "name": "source",
+              "value": "cache_hit",
+              "type": "string"
+            },
+            {
+              "id": "cost",
+              "name": "cost",
+              "value": "0.01",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "personalizar-desde-cache",
+      "name": "Personalizar Desde Cache",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1200, 500]
+    },
+    {
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "airtableApi",
+        "operation": "update",
+        "baseId": "TU_BASE_ID_AQUI",
+        "tableId": "Cuentos_Completos",
+        "id": "={{$json.records[0].id}}",
+        "data": {
+          "usage_count": "={{$json.records[0].fields.usage_count + 1}}"
+        },
+        "options": {}
+      },
+      "id": "actualizar-uso",
+      "name": "Actualizar Contador de Uso",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [1400, 500]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{{\n  \"message\": \"Cuento no existe aun. El generador masivo se esta ejecutando. Te notificaremos cuando este listo.\",\n  \"status\": \"processing\",\n  \"trace_id\": $json.trace_id,\n  \"estimated_time\": \"8-12 minutos\"\n}}}",
+        "options": {}
+      },
+      "id": "cuento-en-proceso",
+      "name": "Responder En Proceso",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1200, 700]
+    }
+  ],
+  "connections": {
+    "Entrada Peticion Usuario": {
+      "main": [[{"node": "Crear Keys de Busqueda", "type": "main", "index": 0}]]
+    },
+    "Crear Keys de Busqueda": {
+      "main": [[{"node": "Buscar Investigacion Existe", "type": "main", "index": 0}]]
+    },
+    "Buscar Investigacion Existe": {
+      "main": [[{"node": "IF Necesita Investigacion", "type": "main", "index": 0}]]
+    },
+    "IF Necesita Investigacion": {
+      "main": [
+        [{"node": "Investigar Desafio Nuevo", "type": "main", "index": 0}],
+        [{"node": "Buscar Cuento Especifico Existe", "type": "main", "index": 0}]
+      ]
+    },
+    "Investigar Desafio Nuevo": {
+      "main": [[{"node": "Guardar Investigacion", "type": "main", "index": 0}]]
+    },
+    "Guardar Investigacion": {
+      "main": [[{"node": "Activar Generador Masivo", "type": "main", "index": 0}]]
+    },
+    "Activar Generador Masivo": {
+      "main": [[{"node": "Buscar Cuento Especifico Existe", "type": "main", "index": 0}]]
+    },
+    "Buscar Cuento Especifico Existe": {
+      "main": [[{"node": "IF Cuento Existe", "type": "main", "index": 0}]]
+    },
+    "IF Cuento Existe": {
+      "main": [
+        [{"node": "Personalizar Desde Cache", "type": "main", "index": 0}],
+        [{"node": "Responder En Proceso", "type": "main", "index": 0}]
+      ]
+    },
+    "Personalizar Desde Cache": {
+      "main": [[{"node": "Actualizar Contador de Uso", "type": "main", "index": 0}]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "newslittle-principal-v1",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "id": "newslittle-sistema-principal",
+  "tags": ["newslittle", "terapeutico", "cache"]
+}
