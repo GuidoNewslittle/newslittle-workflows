@@ -1,0 +1,89 @@
+
+      { "name": "Newslittle - Generador Masivo Automático", "nodes": [ { "parameters": {}, "id":
+      "trigger-generador-masivo", "name": "🚀 TRIGGER: Investigación Nueva", "type":
+      "n8n-nodes-base.executeWorkflowTrigger", "typeVersion": 1, "position": [200, 400] }, { "parameters": {
+      "assignments": { "assignments": [ { "id": "animals-assignment", "name": "animals_list", "value":
+      "perro_labrador,perro_golden,gato_persa,gato_siames,oso_teddy,oso_polar,conejo_blanco,leon_peluche,elefante_gris,unicornio_rosa,dragon_verde,dinosaurio_rex",
+      "type": "string" }, { "id": "batch-info", "name": "batch_timestamp", "value": "={{new Date().toISOString()}}",
+      "type": "string" } ] }, "options": {} }, "id": "config-animales", "name": "📋 CONFIG: Lista de Animales", "type":
+      "n8n-nodes-base.set", "typeVersion": 3.4, "position": [400, 400] }, { "parameters": { "functionCode": "// Crear
+      combinación para cada animal con el desafío investigado\nconst animals =
+      $input.first().json.animals_list.split(',');\nconst challenge = $input.first().json.challenge;\nconst ageRange =
+      $input.first().json.age_range;\nconst researchData = $input.first().json.research_data;\nconst batchTimestamp =
+      $input.first().json.batch_timestamp;\n\nconst combinations = animals.map(animal => ({\n animal_type:
+      animal.trim(),\n challenge: challenge,\n age_range: ageRange,\n research_data: researchData,\n complete_key:
+      `${animal.trim()}_${challenge}_${ageRange}`,\n batch_id: `batch_${new Date().getTime()}`,\n batch_timestamp:
+      batchTimestamp,\n generation_order: animals.indexOf(animal) + 1\n}));\n\nconsole.log(`🔢 Generando
+      ${combinations.length} cuentos para el desafío: ${challenge} (edad: ${ageRange})`);\nconsole.log(`📋 Animales:
+      ${animals.join(', ')}`);\n\nreturn combinations.map(combo => ({ json: combo }));" }, "id":
+      "generar-combinaciones", "name": "🔢 GENERAR: Todas las Combinaciones", "type": "n8n-nodes-base.function",
+      "typeVersion": 1, "position": [600, 400] }, { "parameters": { "batchSize": 3, "options": {} }, "id":
+      "procesar-lotes", "name": "⚡ PROCESAR: En Lotes de 3", "type": "n8n-nodes-base.splitInBatches", "typeVersion": 3,
+      "position": [800, 400] }, { "parameters": { "model": "gpt-4o-mini", "messages": { "values": [ { "role": "user",
+      "content": "Rol: Escritor especializado en cuentos terapéuticos infantiles.\n\nCrea un cuento TEMPLATE
+      reutilizable para múltiples niños:\n\n**DATOS BASE:**\n- Animal protagonista: {{$json.animal_type}}\n- Desafío
+      emocional: {{$json.challenge}}\n- Rango de edad: {{$json.age_range}} años\n- Base científica:
+      {{$json.research_data}}\n\n**VARIABLES PARA PERSONALIZACIÓN:**\n- {{CHILD_NAME}} = Nombre del niño específico\n-
+      {{TOY_NAME}} = Nombre del peluche específico\n- {{SPECIFIC_CONTEXT}} = Contexto particular del
+      caso\n\n**ESTRUCTURA TERAPÉUTICA REQUERIDA:**\n\n**Párrafo 1: Presentación e Identificación**\n- Presenta a
+      {{TOY_NAME}} (el {{$json.animal_type}})\n- Establece la relación con {{CHILD_NAME}}\n- Introduce el desafío
+      ({{$json.challenge}})\n- Validación emocional inicial\n\n**Párrafo 2: Desarrollo del Conflicto**\n- {{TOY_NAME}}
+      también experimenta el mismo desafío\n- Descripción de emociones (apropiadas para {{$json.age_range}} años)\n-
+      Normalización del problema\n- Conexión empática\n\n**Párrafo 3: Descubrimiento de Soluciones**\n- {{TOY_NAME}}
+      aprende técnicas de afrontamiento\n- Incorporar estrategias de la investigación científica\n- Modelado de
+      comportamiento positivo\n- Técnicas específicas para {{$json.challenge}}\n\n**Párrafo 4: Aplicación y
+      Empoderamiento**\n- {{TOY_NAME}} y {{CHILD_NAME}} practican juntos\n- Aplicación exitosa de las técnicas\n-
+      Refuerzo positivo y autoestima\n- Final empoderador y esperanzador\n\n**REQUISITOS ESPECÍFICOS:**\n- Vocabulario
+      apropiado para {{$json.age_range}} años\n- Longitud: 4 párrafos de 4-6 oraciones cada uno\n- Tono cálido,
+      comprensivo y esperanzador\n- Mensaje terapéutico basado en evidencia\n- Template reutilizable para cualquier niño
+      con este desafío\n\n**ELEMENTOS A INCLUIR:**\n- Técnicas específicas de {{$json.challenge}} de la investigación\n-
+      Características naturales del {{$json.animal_type}} que ayuden\n- Progresión emocional clara: problema →
+      comprensión → técnicas → solución\n- Lenguaje que fomente la identificación y el aprendizaje\n\nCrea un cuento que
+      funcione como base terapéutica sólida y personalizable para múltiples casos." } ] }, "options": { "temperature":
+      0.7 } }, "id": "generar-cuento-template", "name": "📚 GENERAR: Cuento Template", "type":
+      "@n8n/n8n-nodes-langchain.openAi", "typeVersion": 1.8, "position": [1000, 400], "credentials": { "openAiApi": {
+      "id": "openai-credentials", "name": "OpenAI Newslittle" } } }, { "parameters": { "authentication":
+      "predefinedCredentialType", "nodeCredentialType": "airtableApi", "operation": "append", "baseId":
+      "TU_AIRTABLE_BASE_ID", "tableId": "Cuentos_Completos", "columns": { "mappingMode": "defineBelow", "value": {
+      "complete_key": "={{$json.complete_key}}", "animal_type": "={{$json.animal_type}}", "challenge":
+      "={{$json.challenge}}", "age_range": "={{$json.age_range}}", "story_template": "={{$node['📚 GENERAR: Cuento
+      Template'].json.text}}", "research_used": "={{$json.research_data}}", "creation_cost": "2.00", "usage_count": "0",
+      "status": "ready", "batch_id": "={{$json.batch_id}}", "generation_order": "={{$json.generation_order}}",
+      "created_timestamp": "={{$json.batch_timestamp}}" }, "schema": [ { "id": "complete_key", "displayName":
+      "complete_key", "required": false, "defaultMatch": false, "canBeUsedToMatch": false, "type": "string" }, { "id":
+      "animal_type", "displayName": "animal_type", "required": false, "defaultMatch": false, "canBeUsedToMatch": false,
+      "type": "string" }, { "id": "challenge", "displayName": "challenge", "required": false, "defaultMatch": false,
+      "canBeUsedToMatch": false, "type": "string" }, { "id": "age_range", "displayName": "age_range", "required": false,
+      "defaultMatch": false, "canBeUsedToMatch": false, "type": "string" }, { "id": "story_template", "displayName":
+      "story_template", "required": false, "defaultMatch": false, "canBeUsedToMatch": false, "type": "string" }, { "id":
+      "research_used", "displayName": "research_used", "required": false, "defaultMatch": false, "canBeUsedToMatch":
+      false, "type": "string" }, { "id": "creation_cost", "displayName": "creation_cost", "required": false,
+      "defaultMatch": false, "canBeUsedToMatch": false, "type": "string" }, { "id": "usage_count", "displayName":
+      "usage_count", "required": false, "defaultMatch": false, "canBeUsedToMatch": false, "type": "string" }, { "id":
+      "status", "displayName": "status", "required": false, "defaultMatch": false, "canBeUsedToMatch": false, "type":
+      "string" }, { "id": "batch_id", "displayName": "batch_id", "required": false, "defaultMatch": false,
+      "canBeUsedToMatch": false, "type": "string" }, { "id": "generation_order", "displayName": "generation_order",
+      "required": false, "defaultMatch": false, "canBeUsedToMatch": false, "type": "string" }, { "id":
+      "created_timestamp", "displayName": "created_timestamp", "required": false, "defaultMatch": false,
+      "canBeUsedToMatch": false, "type": "string" } ] }, "options": {} }, "id": "guardar-cuento-bd", "name": "💾
+      GUARDAR: Cuento en BD", "type": "n8n-nodes-base.airtable", "typeVersion": 2.1, "position": [1200, 400],
+      "credentials": { "airtableApi": { "id": "airtable-credentials", "name": "Airtable Newslittle" } } }, {
+      "parameters": { "assignments": { "assignments": [ { "id": "log-success", "name": "generation_status", "value":
+      "success", "type": "string" }, { "id": "log-animal", "name": "completed_animal", "value":
+      "={{$json.animal_type}}", "type": "string" }, { "id": "log-batch", "name": "batch_progress", "value":
+      "={{$json.generation_order}} de 12", "type": "string" }, { "id": "log-timestamp", "name": "completion_time",
+      "value": "={{new Date().toISOString()}}", "type": "string" } ] }, "options": {} }, "id": "log-progreso", "name":
+      "📊 LOG: Progreso Generación", "type": "n8n-nodes-base.set", "typeVersion": 3.4, "position": [1400, 400] } ],
+      "connections": { "🚀 TRIGGER: Investigación Nueva": { "main": [ [ { "node": "📋 CONFIG: Lista de Animales",
+      "type": "main", "index": 0 } ] ] }, "📋 CONFIG: Lista de Animales": { "main": [ [ { "node": "🔢 GENERAR: Todas las
+      Combinaciones", "type": "main", "index": 0 } ] ] }, "🔢 GENERAR: Todas las Combinaciones": { "main": [ [ { "node":
+      "⚡ PROCESAR: En Lotes de 3", "type": "main", "index": 0 } ] ] }, "⚡ PROCESAR: En Lotes de 3": { "main": [ [ {
+      "node": "📚 GENERAR: Cuento Template", "type": "main", "index": 0 } ] ] }, "📚 GENERAR: Cuento Template": {
+      "main": [ [ { "node": "💾 GUARDAR: Cuento en BD", "type": "main", "index": 0 } ] ] }, "💾 GUARDAR: Cuento en BD":
+      { "main": [ [ { "node": "📊 LOG: Progreso Generación", "type": "main", "index": 0 } ] ] } }, "active": false,
+      "settings": { "executionOrder": "v1" }, "versionId": "generador-masivo-v1", "meta": {
+      "templateCredsSetupCompleted": false }, "id": "generador-masivo-newslittle", "tags": [ { "createdAt":
+      "2024-01-01T00:00:00.000Z", "updatedAt": "2024-01-01T00:00:00.000Z", "id": "automation", "name": "automation" }, {
+      "createdAt": "2024-01-01T00:00:00.000Z", "updatedAt": "2024-01-01T00:00:00.000Z", "id": "therapeutic", "name":
+      "therapeutic" } ] }
+    
