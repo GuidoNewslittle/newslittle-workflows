@@ -1,0 +1,106 @@
+{
+  "createdAt": "2025-07-03T07:44:33.000Z",
+  "updatedAt": "2025-07-03T07:44:33.000Z",
+  "id": "newslittle-sistema-principal",
+  "name": "Newslittle - Sistema Inteligente Principal",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "path": "cuento-inteligente",
+        "httpMethod": "POST",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "74003dcd-2ac7-4caa-a1cd-adecc5143c07",
+      "name": "Entrada Peticion Usuario",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 400],
+      "webhookId": "cuento-inteligente"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "challenge-key",
+              "name": "challenge_key",
+              "value": "={{$json.challenge}}_{{$json.age_range}}",
+              "type": "string"
+            },
+            {
+              "id": "complete-key",
+              "name": "complete_key",
+              "value": "={{$json.animal_type}}_{{$json.challenge}}_{{$json.age_range}}",
+              "type": "string"
+            },
+            {
+              "id": "trace-id",
+              "name": "trace_id",
+              "value": "={{`req_${new Date().getTime()}_${Math.floor(Math.random() * 1000)}`}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ce8c3da4-899c-4cc4-af73-8096c64eec64",
+      "name": "Crear Keys de Busqueda",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [400, 400]
+    },
+    {
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "airtableApi",
+        "operation": "list",
+        "baseId": "TU_BASE_ID_AQUI",
+        "tableId": "Investigacion_Desafios",
+        "filterByFormula": "={challenge_key} = '{{$json.challenge_key}}'",
+        "options": {}
+      },
+      "id": "3dee878b-d748-4829-ac0a-cfd6705d31e5",
+      "name": "Buscar Investigacion Existe",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [600, 400]
+    }
+  ],
+  "connections": {
+    "Entrada Peticion Usuario": {
+      "main": [
+        [
+          {
+            "node": "Crear Keys de Busqueda",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crear Keys de Busqueda": {
+      "main": [
+        [
+          {
+            "node": "Buscar Investigacion Existe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "pinData": {},
+  "versionId": "4e2affe6-bb1c-4ddc-92f9-dde0b7656796",
+  "triggerCount": 0,
+  "tags": []
+}
