@@ -1,0 +1,86 @@
+{
+  "name": "Newslittle Sistema Inteligente Principal",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "cuento-inteligente",
+        "httpMethod": "POST",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 400],
+      "id": "webhook-entrada",
+      "name": "Entrada Peticion Usuario",
+      "webhookId": "cuento-inteligente"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "challenge-key",
+              "name": "challenge_key",
+              "value": "={{$json.challenge}}_{{$json.age_range}}",
+              "type": "string"
+            },
+            {
+              "id": "complete-key",
+              "name": "complete_key",
+              "value": "={{$json.animal_type}}_{{$json.challenge}}_{{$json.age_range}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [400, 400],
+      "id": "crear-keys",
+      "name": "Crear Keys de Busqueda"
+    },
+    {
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "airtableApi",
+        "operation": "list",
+        "baseId": "TU_BASE_ID_AQUI",
+        "tableId": "Investigacion_Desafios",
+        "filterByFormula": "={challenge_key} = '{{$json.challenge_key}}'",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [600, 400],
+      "id": "buscar-investigacion",
+      "name": "Buscar Investigacion Existe"
+    }
+  ],
+  "connections": {
+    "Entrada Peticion Usuario": {
+      "main": [[{
+        "node": "Crear Keys de Busqueda",
+        "type": "main",
+        "index": 0
+      }]]
+    },
+    "Crear Keys de Busqueda": {
+      "main": [[{
+        "node": "Buscar Investigacion Existe",
+        "type": "main",
+        "index": 0
+      }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "id": "newslittle-sistema-principal",
+  "tags": []
+}
